@@ -2,7 +2,7 @@
 // O token do Mercado Pago é lido do Firestore (salvo pelo dono no painel) usando o login de quem chamou.
 // IMPORTANTE: na Vercel este arquivo precisa ficar em  api/mp.js
 const PROJECT = 'excellentspay';
-const PERMITIDOS = ['/checkout/preferences', '/v1/payments/search', '/users/me'];
+const PERMITIDOS = ['/checkout/preferences', '/v1/payments/search', '/v1/payment_methods/installments', '/users/me'];
 
 module.exports = async (req, res) => {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Método não permitido.' });

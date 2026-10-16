@@ -38,6 +38,8 @@ module.exports = async (req, res) => {
     const liquido = (p.transaction_details && p.transaction_details.net_received_amount) ?? null;
     const dados = { taxa };
     if (liquido !== null) dados.liquido = liquido;
+    const tp = p.transaction_details && p.transaction_details.total_paid_amount;
+    if (snap.data().alvo != null && tp > p.transaction_amount) dados.taxaCli = Math.round((tp - p.transaction_amount) * 100) / 100;
     if (snap.data().status !== 'pago') {
       dados.status = 'pago';
       dados.pagoEm = new Date(p.date_approved || Date.now()).getTime();
