@@ -409,7 +409,28 @@ function bindCopy(){$$('[data-copy]').forEach(b=>b.onclick=()=>navigator.clipboa
 
 // Lista
 const tag=s=>`<span class="tag ${s==='pago'?'t-paid':s==='cancelado'?'t-canc':s==='processando'?'t-proc':s==='recusado'?'t-rec':'t-pend'}">${s==='pago'?'Pago':s==='cancelado'?'Cancelado':s==='processando'?'Processando':s==='recusado'?'Recusado':'Pendente'}</span>`;
+const MOTIVOS={
+cc_rejected_insufficient_amount:'Saldo/limite insuficiente no cartão',
+cc_rejected_bad_filled_security_code:'Código de segurança (CVV) incorreto',
+cc_rejected_bad_filled_date:'Data de validade incorreta',
+cc_rejected_bad_filled_card_number:'Número do cartão incorreto',
+cc_rejected_bad_filled_other:'Dados do cartão preenchidos incorretamente',
+cc_rejected_call_for_authorize:'O banco exige autorização: o cliente precisa ligar para o banco',
+cc_rejected_card_disabled:'Cartão desativado/bloqueado: o cliente deve ativá-lo no banco',
+cc_rejected_duplicated_payment:'Pagamento duplicado (já houve um igual)',
+cc_rejected_high_risk:'Recusado pela análise antifraude do Mercado Pago',
+cc_rejected_blacklist:'Cartão bloqueado por segurança',
+cc_rejected_max_attempts:'Limite de tentativas atingido: usar outro cartão',
+cc_rejected_invalid_installments:'Cartão não aceita essa quantidade de parcelas',
+cc_rejected_card_error:'Não foi possível processar o cartão',
+cc_rejected_insufficient_data:'Dados insuficientes do cartão',
+cc_rejected_other_reason:'O banco emissor recusou (sem motivo informado)',
+rejected_by_bank:'Recusado pelo banco',
+rejected_insufficient_data:'Dados insuficientes'
+};
+const motivo=m=>m?(MOTIVOS[m]||'Motivo: '+m):'Motivo não informado pelo Mercado Pago';
 function infoTaxa(c){
+  if(c.status==='recusado')return `<div class="hint" style="color:var(--bad)">${esc(motivo(c.motivo))}</div>`;
   if(c.alvo!=null)return `<div class="hint">Cliente paga ~${brl(c.alvo)} · taxa do cliente ${brl(c.taxaCli)}</div>`;
   return c.status==='pago'&&c.taxa!=null?`<div class="hint">Taxa ${brl(c.taxa)} · líquido ${brl(c.liquido)}</div>`:'';
 }
@@ -509,7 +530,8 @@ async function syncPag(){
       }else{
         const ult=res[0]?.status; // tentativa mais recente
         const novo=ult==='in_process'?'processando':ult==='rejected'?'recusado':'pendente';
-        if(c.status!==novo)await updateDoc(doc(db,'cobrancas',c.id),{status:novo});
+        const mot=novo==='recusado'?(res[0].status_detail||null):null;
+        if(c.status!==novo||(novo==='recusado'&&(c.motivo||null)!==mot))await updateDoc(doc(db,'cobrancas',c.id),novo==='recusado'?{status:novo,motivo:mot}:{status:novo});
       }
     }
   }catch(e){}
