@@ -180,6 +180,10 @@ main{padding:20px 16px 96px}.g4{grid-template-columns:1fr 1fr}.g2,.row{grid-temp
     <div class="card kpi"><span class="chip wa"><svg class="ic"><use href="#i-clock"/></svg></span><div><small>Aguardando pagamento</small><b id="k3">R$ 0,00</b></div></div>
     <div class="card kpi"><span class="chip"><svg class="ic"><use href="#i-list"/></svg></span><div><small>Cobranças criadas</small><b id="k4">0</b></div></div>
   </div>
+  <div class="grid g4" style="margin-bottom:14px">
+    <div class="card kpi"><span class="chip ok"><svg class="ic"><use href="#i-wallet"/></svg></span><div><small>Líquido recebido</small><b id="k5">R$ 0,00</b></div></div>
+    <div class="card kpi"><span class="chip wa"><svg class="ic"><use href="#i-trend"/></svg></span><div><small>Taxas do Mercado Pago</small><b id="k6">R$ 0,00</b></div></div>
+  </div>
   <div class="grid g2">
     <div class="card"><h2>Recebido nos últimos 6 meses</h2><div class="bars" id="bars"></div></div>
     <div class="card"><h2>Últimas cobranças</h2><div id="recent"></div></div>
@@ -324,7 +328,7 @@ function bindCopy(){$$('[data-copy]').forEach(b=>b.onclick=()=>navigator.clipboa
 const tag=s=>`<span class="tag ${s==='pago'?'t-paid':s==='cancelado'?'t-canc':'t-pend'}">${s==='pago'?'Pago':s==='cancelado'?'Cancelado':'Pendente'}</span>`;
 function renderList(){
   const f=$('#flt').value,l=cob.filter(c=>!f||c.status===f);
-  $('#tb').innerHTML=l.length?l.map((c,i)=>`<tr class="rw" style="animation-delay:${Math.min(i,12)*40}ms"><td><b>${esc(c.desc)}</b><div class="hint">${new Date(c.criado).toLocaleDateString('pt-BR')} · até ${c.parc}x</div></td><td class="hide-m">${esc(c.nome||'—')}</td><td><b>${brl(c.val)}</b></td><td>${tag(c.status)}</td>
+  $('#tb').innerHTML=l.length?l.map((c,i)=>`<tr class="rw" style="animation-delay:${Math.min(i,12)*40}ms"><td><b>${esc(c.desc)}</b><div class="hint">${new Date(c.criado).toLocaleDateString('pt-BR')} · até ${c.parc}x</div></td><td class="hide-m">${esc(c.nome||'—')}</td><td><b>${brl(c.val)}</b>${c.status==='pago'&&c.taxa!=null?`<div class="hint">Taxa ${brl(c.taxa)} · líquido ${brl(c.liquido)}</div>`:''}</td><td>${tag(c.status)}</td>
   <td><div class="acts">${c.status==='pendente'?`<button class="btn ghost sm" data-copy="${c.link}" title="Copiar link">${ic('copy')}</button><a class="btn ghost sm" target="_blank" rel="noopener" href="${waLink(c)}" title="WhatsApp">${ic('send')}</a><button class="btn ghost sm" data-pay="${c.id}" title="Marcar como pago">${ic('check')}</button><button class="btn ghost sm" data-del="${c.id}" title="Cancelar">${ic('x')}</button>`:`<button class="btn ghost sm" data-rm="${c.id}" title="Remover">${ic('trash')}</button>`}</div></td></tr>`).join(''):`<tr><td colspan="5" class="empty">Nenhuma cobrança por aqui. Crie a primeira em “Nova”.</td></tr>`;
   bindCopy();
   $$('[data-pay]').forEach(b=>b.onclick=()=>{updateDoc(doc(db,'cobrancas',b.dataset.pay),{status:'pago',pagoEm:Date.now()});toast('Marcado como pago')});
@@ -338,19 +342,26 @@ function renderDash(){
   const pg=cob.filter(c=>c.status==='pago'),m=new Date(),sum=a=>a.reduce((s,c)=>s+c.val,0);
   const mes=pg.filter(c=>{const d=new Date(c.pagoEm||c.criado);return d.getMonth()===m.getMonth()&&d.getFullYear()===m.getFullYear()});
   cnt($('#k1'),sum(pg));cnt($('#k2'),sum(mes));cnt($('#k3'),sum(cob.filter(c=>c.status==='pendente')));cnt($('#k4'),cob.length,n=>Math.round(n));
+  cnt($('#k5'),pg.reduce((s,c)=>s+(c.liquido??c.val),0));cnt($('#k6'),pg.reduce((s,c)=>s+(c.taxa||0),0));
   const ms=[...Array(6)].map((_,i)=>{const d=new Date(m.getFullYear(),m.getMonth()-5+i,1);return{d,v:sum(pg.filter(c=>{const x=new Date(c.pagoEm||c.criado);return x.getMonth()===d.getMonth()&&x.getFullYear()===d.getFullYear()}))}});
   const mx=Math.max(...ms.map(x=>x.v),1);
   $('#bars').innerHTML=ms.map((x,i)=>`<div class="bar"><span>${x.v?brl(x.v).replace(',00',''):''}</span><div style="--h:${x.v/mx*75}%;--d:${i*90}ms"></div>${x.d.toLocaleDateString('pt-BR',{month:'short'}).replace('.','')}</div>`).join('');
   $('#recent').innerHTML=cob.length?`<table><tbody>${cob.slice(0,5).map(c=>`<tr><td><b>${esc(c.desc)}</b></td><td style="text-align:right">${brl(c.val)}</td><td>${tag(c.status)}</td></tr>`).join('')}</tbody></table>`:'<div class="empty">Sem cobranças ainda.</div>';
 }
 $('#sync').onclick=async()=>{
-  const p=cob.filter(c=>c.status==='pendente');if(!p.length)return toast('Nenhuma cobrança pendente');
+  const p=cob.filter(c=>c.status==='pendente'||(c.status==='pago'&&c.taxa==null));if(!p.length)return toast('Nada para atualizar');
   const b=$('#sync');b.disabled=true;b.classList.add('spin');let n=0;
   try{
     for(const c of p){
       const r=await mp(`/v1/payments/search?external_reference=${c.id}&sort=date_created&criteria=desc`);
       const ok=(r.results||[]).find(x=>x.status==='approved');
-      if(ok){await updateDoc(doc(db,'cobrancas',c.id),{status:'pago',pagoEm:new Date(ok.date_approved||Date.now()).getTime()});n++}
+      if(ok){
+        const taxa=Math.round((ok.fee_details||[]).filter(f=>f.fee_payer==='collector').reduce((s,f)=>s+(f.amount||0),0)*100)/100;
+        const liquido=ok.transaction_details?.net_received_amount??Math.round((c.val-taxa)*100)/100;
+        const dados={status:'pago',taxa,liquido};
+        if(c.status==='pendente'){dados.pagoEm=new Date(ok.date_approved||Date.now()).getTime();n++}
+        await updateDoc(doc(db,'cobrancas',c.id),dados);
+      }
     }
     toast(n?n+' pagamento(s) confirmado(s)':'Nenhum pagamento novo');
   }catch(e){toast(netErr(e))}
