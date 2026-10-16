@@ -39,7 +39,7 @@ module.exports = async (req, res) => {
       const atual = snap.data().status;
       const aberto = ['pendente', 'processando', 'recusado'].includes(atual);
       if (aberto && p.status === 'in_process' && atual !== 'processando') await ref.update({ status: 'processando' });
-      else if (aberto && p.status === 'rejected' && atual !== 'recusado') await ref.update({ status: 'recusado' });
+      else if (aberto && p.status === 'rejected' && (atual !== 'recusado' || snap.data().motivo !== p.status_detail)) await ref.update({ status: 'recusado', motivo: p.status_detail || null });
       return res.status(200).json({ ok: true });
     }
 
