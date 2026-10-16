@@ -28,11 +28,20 @@ module.exports = async (req, res) => {
     const r = await fetch('https://api.mercadopago.com/v1/payments/' + id, { headers: { Authorization: 'Bearer ' + token } });
     if (!r.ok) return res.status(200).json({ ok: false });
     const p = await r.json();
-    if (p.status !== 'approved' || !p.external_reference) return res.status(200).json({ ok: true });
+    if (!p.external_reference) return res.status(200).json({ ok: true });
 
     const ref = db.doc('cobrancas/' + p.external_reference);
     const snap = await ref.get();
     if (!snap.exists) return res.status(200).json({ ok: true });
+
+    // Em análise -> "processando"; recusado -> "recusado" (o cliente pode tentar de novo no mesmo link).
+    if (p.status !== 'approved') {
+      const atual = snap.data().status;
+      const aberto = ['pendente', 'processando', 'recusado'].includes(atual);
+      if (aberto && p.status === 'in_process' && atual !== 'processando') await ref.update({ status: 'processando' });
+      else if (aberto && p.status === 'rejected' && atual !== 'recusado') await ref.update({ status: 'recusado' });
+      return res.status(200).json({ ok: true });
+    }
 
     const taxa = Math.round((p.fee_details || []).filter(f => f.fee_payer === 'collector').reduce((s, f) => s + (f.amount || 0), 0) * 100) / 100;
     const liquido = (p.transaction_details && p.transaction_details.net_received_amount) ?? null;
