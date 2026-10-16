@@ -1,0 +1,7 @@
+{
+  "name": "painel-cobrancas",
+  "private": true,
+  "dependencies": {
+    "firebase-admin": "^12.0.0"
+  }
+}

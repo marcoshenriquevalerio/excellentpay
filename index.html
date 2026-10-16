@@ -118,6 +118,19 @@ main{padding:20px 16px 96px}.g4{grid-template-columns:1fr 1fr}.g2,.row{grid-temp
 .lsec{display:flex;gap:8px;justify-content:center;align-items:center;color:var(--mut);font-size:12.5px;margin-top:20px}
 .lsec .ic{width:16px;height:16px;stroke:var(--ok)}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+.sc{display:grid;grid-template-columns:auto 1fr auto;gap:14px;align-items:center;padding:14px 2px;border-bottom:1px solid var(--line)}
+.sc:last-child{border:0}
+.sc .dias{text-align:center;min-width:78px;border-radius:14px;padding:9px 10px;line-height:1.1}
+.sc .dias b{display:block;font-size:24px;font-weight:800}.sc .dias small{font-size:11px;font-weight:700}
+.pg{height:7px;border-radius:9px;overflow:hidden;margin-top:7px;max-width:340px}
+.pg i{display:block;height:100%;background:currentColor;border-radius:9px;transition:width .8s cubic-bezier(.2,.9,.3,1)}
+.s-ok{background:var(--ok2);color:var(--ok)}.s-wa{background:var(--wa2);color:var(--wa)}.s-bad{background:var(--bad2);color:var(--bad)}.s-off{background:#eceff5;color:var(--mut)}
+.sec-t{font-size:13px;font-weight:700;color:var(--mut);text-transform:uppercase;letter-spacing:.04em;margin:6px 0 2px}
+.nb{margin-left:auto;background:#ff5b5b;color:#fff;font-size:11px;font-weight:800;padding:1px 7px;border-radius:99px;animation:pulse 1.6s infinite}
+dialog{border:0;border-radius:20px;padding:24px;width:min(440px,92vw);color:var(--ink);box-shadow:0 30px 80px #0b163055}
+dialog::backdrop{background:#0b163088;backdrop-filter:blur(3px)}
+dialog[open]{animation:pop .35s cubic-bezier(.2,.9,.3,1.3)}
+@media(max-width:860px){.sc{grid-template-columns:auto 1fr}.sc .acts{grid-column:1/-1;justify-content:flex-start}.nb{position:absolute;top:0;right:6px;margin:0}}
 </style>
 </head>
 <body>
@@ -139,6 +152,8 @@ main{padding:20px 16px 96px}.g4{grid-template-columns:1fr 1fr}.g2,.row{grid-temp
 <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 0 0-14-4.5L4 9M4 4v5h5M4 13a8 8 0 0 0 14 4.5L20 15M20 20v-5h-5"/></symbol>
 <symbol id="i-out" viewBox="0 0 24 24"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 8l-4 4 4 4M6 12h10"/></symbol>
 <symbol id="i-key" viewBox="0 0 24 24"><circle cx="8" cy="15" r="4" fill="currentColor" fill-opacity=".18"/><circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M16 7l3 3"/></symbol>
+<symbol id="i-support" viewBox="0 0 24 24"><path d="M4 13v-1a8 8 0 0 1 16 0v1"/><rect x="3" y="13" width="4" height="6" rx="2" fill="currentColor" fill-opacity=".18"/><rect x="3" y="13" width="4" height="6" rx="2"/><rect x="17" y="13" width="4" height="6" rx="2" fill="currentColor" fill-opacity=".18"/><rect x="17" y="13" width="4" height="6" rx="2"/><path d="M19 19c0 1.6-1.6 2.5-4 2.5h-2"/></symbol>
+<symbol id="i-wa" viewBox="0 0 24 24"><path d="M12 3a9 9 0 0 0-7.8 13.5L3 21l4.6-1.2A9 9 0 1 0 12 3z"/><path d="M9 8.5c0 3.5 3 6.5 6.5 6.5l1-1.5-2-1-1 .8a4 4 0 0 1-2-2l.8-1-1-2z"/></symbol>
 </defs></svg>
 
 <div id="load"><i></i></div>
@@ -164,6 +179,7 @@ main{padding:20px 16px 96px}.g4{grid-template-columns:1fr 1fr}.g2,.row{grid-temp
     <button class="nav on" data-v="dash"><svg class="ic"><use href="#i-dash"/></svg>Resumo</button>
     <button class="nav" data-v="new"><svg class="ic"><use href="#i-plus"/></svg>Nova</button>
     <button class="nav" data-v="list"><svg class="ic"><use href="#i-list"/></svg>Cobranças</button>
+    <button class="nav" data-v="sup"><svg class="ic"><use href="#i-support"/></svg>Suporte<span class="nb" id="sup_nb" hidden></span></button>
     <button class="nav" data-v="acc" data-owner><svg class="ic"><use href="#i-users"/></svg>Acessos</button>
     <button class="nav" data-v="cfg"><svg class="ic"><use href="#i-sliders"/></svg>Ajustes</button>
   </nav>
@@ -206,6 +222,7 @@ main{padding:20px 16px 96px}.g4{grid-template-columns:1fr 1fr}.g2,.row{grid-temp
       <div class="f"><label>WhatsApp do cliente</label><input id="n_tel" inputmode="tel" placeholder="(15) 99999-9999"></div>
       <div class="f"><label>Link vale por</label><select id="n_exp"><option value="1">1 dia</option><option value="3">3 dias</option><option value="7" selected>7 dias</option><option value="30">30 dias</option><option value="0">Sem prazo</option></select></div>
     </div>
+    <div class="warn" id="n_est" style="background:var(--pri2);color:var(--ink)">Informe o valor para ver a taxa estimada.</div>
     <button class="btn" id="gerar"><svg class="ic"><use href="#i-send"/></svg>Gerar link de pagamento</button>
     <div id="out"></div>
   </div>
@@ -215,6 +232,11 @@ main{padding:20px 16px 96px}.g4{grid-template-columns:1fr 1fr}.g2,.row{grid-temp
   <div class="top"><div><h1>Cobranças</h1><p class="sub">Todos os links criados e o status de cada um.</p></div>
   <select id="flt" style="width:auto"><option value="">Todas</option><option value="pago">Pagas</option><option value="pendente">Pendentes</option><option value="cancelado">Canceladas</option></select></div>
   <div class="card" style="overflow:auto"><table><thead><tr><th>Cobrança</th><th class="hide-m">Cliente</th><th>Valor</th><th>Status</th><th></th></tr></thead><tbody id="tb"></tbody></table></div>
+</section>
+
+<section class="view" id="sup">
+  <h1>Suporte</h1><p class="sub">Clientes que já pagaram, com a contagem regressiva dos dias de suporte.</p>
+  <div class="card" id="sup_list"></div>
 </section>
 
 <section class="view" id="acc">
@@ -232,17 +254,34 @@ main{padding:20px 16px 96px}.g4{grid-template-columns:1fr 1fr}.g2,.row{grid-temp
   <div class="card" style="max-width:640px">
     <div class="f" data-owner><label>Access Token do Mercado Pago</label><input id="c_tok" type="password" autocomplete="off" placeholder="APP_USR-..."><p class="hint" id="c_tokh">Mercado Pago → Seu negócio → Configurações → Credenciais.</p></div>
     <div class="f"><label>Nome do seu negócio</label><input id="c_nome" placeholder="Ex.: Excellent Services"></div>
+    <div class="f"><label class="sw"><input type="checkbox" id="c_juros"><i></i><span>Juros do parcelamento pagos pelo cliente</span></label>
+      <p class="hint">Ligado: o cliente paga os juros (valor final maior). Desligado: você assume os juros e o cliente parcela sem acréscimo. Deixe igual ao que está configurado na sua conta do Mercado Pago; esta chave não altera a conta, só ajusta a estimativa de taxa e a mensagem ao cliente.</p></div>
     <div class="f"><label class="sw"><input type="checkbox" id="c_voltawa"><i></i><span>Voltar para o meu WhatsApp após pagar</span></label>
       <p class="hint">Desligado: o cliente só vê a confirmação do Mercado Pago. Ligado: depois de pagar, abre o seu WhatsApp com a mensagem “Pagamento realizado”.</p></div>
     <div class="row">
       <div class="f"><label>Seu WhatsApp</label><input id="c_wa" inputmode="tel" placeholder="(15) 99999-9999"></div>
       <div class="f"><label>Aviso automático (webhook)</label><input id="c_hook" placeholder="Opcional"></div>
     </div>
+    <div class="f"><label>Taxa do Mercado Pago por parcelas (%)</label>
+      <div id="c_taxas" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px"></div>
+      <p class="hint">Usada para estimar a taxa ao criar a cobrança. Confira os percentuais reais da sua conta no Mercado Pago e ajuste aqui.</p></div>
     <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="salvar"><svg class="ic"><use href="#i-check"/></svg>Salvar ajustes</button><button class="btn ghost" id="testar"><svg class="ic"><use href="#i-key"/></svg>Testar conexão</button></div>
   </div>
 </section>
 </main>
 </div>
+<dialog id="dlg">
+  <h2 id="d_t">Suporte</h2>
+  <div class="f"><label>Dias de suporte</label><input id="d_dias" type="number" min="1" inputmode="numeric" placeholder="Ex.: 30"></div>
+  <div class="f"><label>Início do suporte</label><input id="d_ini" type="date"><p class="hint">Por padrão, o dia em que o cliente pagou.</p></div>
+  <div class="row">
+    <div class="f"><label>Amarelo quando faltar</label><input id="d_am" type="number" min="0" inputmode="numeric"><p class="hint">dias ou menos</p></div>
+    <div class="f"><label>Vermelho quando faltar</label><input id="d_vm" type="number" min="0" inputmode="numeric"><p class="hint">dias ou menos</p></div>
+  </div>
+  <div class="f"><label>WhatsApp do cliente</label><input id="d_tel" inputmode="tel" placeholder="(15) 99999-9999"></div>
+  <p class="hint" id="d_err" style="color:var(--bad);margin:-6px 0 10px"></p>
+  <div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn ghost" id="d_cancel" type="button">Cancelar</button><button class="btn" id="d_save" type="button"><svg class="ic"><use href="#i-check"/></svg>Salvar</button></div>
+</dialog>
 <div id="toast"></div>
 
 <script type="module">
@@ -255,13 +294,22 @@ let cfg={},cob=[],me=null,isOwner=false,unsubs=[];
 const brl=n=>(n||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 const esc=s=>String(s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
 const ic=(n,c='')=>`<svg class="ic ${c}"><use href="#i-${n}"/></svg>`;
-function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('on'),2800)}
+function toast(m,ms=2800){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('on'),ms)}
+const silenciar=new Set();
+function beep(){try{const a=new(window.AudioContext||window.webkitAudioContext)(),o=a.createOscillator(),g=a.createGain();o.connect(g);g.connect(a.destination);o.frequency.value=880;g.gain.setValueAtTime(.15,a.currentTime);g.gain.exponentialRampToValueAtTime(.001,a.currentTime+.6);o.start();o.stop(a.currentTime+.6)}catch(_){}}
+function avisoPago(c){
+  if(silenciar.delete(c.id))return;
+  const t=`Pagamento recebido: ${brl(c.val)} · ${c.nome||c.desc}`;
+  toast('💰 '+t,7000);beep();
+  try{if(window.Notification&&Notification.permission==='granted'&&document.hidden)new Notification('Pagamento recebido',{body:`${brl(c.val)} · ${c.nome||c.desc}`})}catch(_){}
+}
+addEventListener('click',()=>{try{if(window.Notification&&Notification.permission==='default')Notification.requestPermission()}catch(_){}},{once:true});
 function cnt(el,to,fmt=brl){const f=el._v||0;el._v=to;const t0=performance.now();(function s(t){const p=Math.min(1,(t-t0)/750),e=1-Math.pow(1-p,3);el.textContent=fmt(f+(to-f)*e);if(p<1)requestAnimationFrame(s)})(t0)}
 function go(v){
   $$('.view').forEach(e=>e.classList.toggle('on',e.id===v));
   $$('.nav').forEach(e=>e.classList.toggle('on',e.dataset.v===v));
   const b=$('.nav.on');if(b){$('#ind').style.transform=`translateY(${b.offsetTop}px)`;$('#ind').style.height=b.offsetHeight+'px'}
-  if(v==='dash')renderDash();if(v==='list')renderList();scrollTo(0,0)
+  if(v==='dash')renderDash();if(v==='list')renderList();if(v==='sup')renderSup();scrollTo(0,0)
 }
 $$('.nav').forEach(b=>b.onclick=()=>go(b.dataset.v));
 addEventListener('resize',()=>go(document.querySelector('.view.on').id));
@@ -276,13 +324,23 @@ async function mp(path,method='GET',body){
 const netErr=e=>e instanceof TypeError?'Não foi possível conectar ao servidor. Confira se o /api/mp está publicado na Vercel.':e.message;
 
 // Ajustes
-function loadCfg(){$('#c_nome').value=cfg.nome||'';$('#c_wa').value=cfg.wa||'';$('#c_voltawa').checked=!!cfg.voltaWa;$('#c_hook').value=cfg.hook||''}
+const TAXAS_PADRAO=[4.98,9.9,11.2,12.4,13.6,14.8,16,17.2,18.4,19.6,20.8,22];
+const taxasAtuais=()=>(cfg.taxas&&cfg.taxas.length===12?cfg.taxas:TAXAS_PADRAO);
+function renderTaxas(){$('#c_taxas').innerHTML=taxasAtuais().map((t,i)=>`<div><small class="hint">${i+1}x</small><input data-tx="${i}" inputmode="decimal" value="${String(t).replace('.',',')}"></div>`).join('')}
+function estimar(){
+  const v=num($('#n_val').value),p=+$('#n_parc').value,pct=taxasAtuais()[p-1]||0,e=$('#n_est');
+  if(v<=0){e.textContent='Informe o valor para ver a taxa estimada.';return}
+  const tx=Math.round(v*pct)/100;
+  e.innerHTML=`<b>Taxa estimada: ${brl(tx)}</b> (${String(pct).replace('.',',')}% em ${p}x)<br>Você recebe cerca de <b>${brl(v-tx)}</b>${p>1?(cfg.jurosCliente!==false?'<br>Juros pagos pelo cliente: o valor final dele será maior que o da cobrança.':`<br>Você assume os juros: cliente paga ${p}x de ${brl(v/p)}, sem acréscimo.`):''}`;
+}
+function loadCfg(){renderTaxas();estimar();$('#c_juros').checked=cfg.jurosCliente!==false;$('#c_nome').value=cfg.nome||'';$('#c_wa').value=cfg.wa||'';$('#c_voltawa').checked=!!cfg.voltaWa;$('#c_hook').value=cfg.hook||''}
 $('#salvar').onclick=async()=>{
   try{
     const wa=$('#c_wa').value.replace(/\D/g,'');
     if($('#c_voltawa').checked&&wa.length<10)return toast('Informe seu WhatsApp com DDD para ligar essa opção');
-    cfg={nome:$('#c_nome').value.trim(),wa,voltaWa:$('#c_voltawa').checked,hook:$('#c_hook').value.trim()};
-    await setDoc(doc(db,'config','main'),cfg);
+    const taxas=$$('[data-tx]').map(i=>Math.max(0,num(i.value)));
+    cfg={nome:$('#c_nome').value.trim(),wa,voltaWa:$('#c_voltawa').checked,hook:$('#c_hook').value.trim(),taxas,jurosCliente:$('#c_juros').checked};
+    await setDoc(doc(db,'config','main'),cfg);estimar();
     const tk=$('#c_tok').value.trim();
     if(isOwner&&tk){await setDoc(doc(db,'segredos','mp'),{token:tk});$('#c_tok').value='';$('#c_tok').placeholder='•••••••• token salvo';$('#c_tokh').textContent='Token salvo. Cole outro para trocar.'}
     toast('Ajustes salvos')
@@ -294,6 +352,7 @@ $('#sair').onclick=()=>signOut(auth);
 // Nova cobrança
 $('#n_parc').innerHTML=[...Array(12)].map((_,i)=>`<option value="${i+1}">${i?(i+1)+'x':'À vista (1x)'}</option>`).join('');$('#n_parc').value=12;
 const num=v=>parseFloat(String(v).replace(/\./g,'').replace(',','.'))||0;
+$('#n_val').oninput=estimar;$('#n_parc').onchange=estimar;
 $('#gerar').onclick=async()=>{
   const desc=$('#n_desc').value.trim(),val=num($('#n_val').value);
   if(!desc||val<=0)return toast('Informe a descrição e um valor maior que zero');
@@ -305,18 +364,18 @@ $('#gerar').onclick=async()=>{
     body.back_urls={success:`https://wa.me/${n}?text=`+encodeURIComponent(`Pagamento realizado ✅ ${desc} (${brl(val)})`)};
     body.auto_return='approved';
   }
-  if(cfg.hook)body.notification_url=cfg.hook;
+  if(cfg.hook)body.notification_url=cfg.hook;else if(location.protocol==='https:')body.notification_url=location.origin+'/api/webhook';
   if(dias){body.expires=true;body.expiration_date_to=new Date(Date.now()+dias*864e5).toISOString()}
   const b=$('#gerar');b.disabled=true;b.classList.add('spin');
   try{
     const r=await mp('/checkout/preferences','POST',body);
-    const c={id,desc,val,parc,nome:$('#n_nome').value.trim(),mail:$('#n_mail').value.trim(),tel:$('#n_tel').value.replace(/\D/g,''),link:r.init_point,status:'pendente',criado:Date.now(),pagoEm:null,por:me.email};
+    const c={id,desc,val,parc,nome:$('#n_nome').value.trim(),mail:$('#n_mail').value.trim(),tel:$('#n_tel').value.replace(/\D/g,''),juros:cfg.jurosCliente!==false,link:r.init_point,status:'pendente',criado:Date.now(),pagoEm:null,por:me.email};
     await setDoc(doc(db,'cobrancas',id),c);showOut(c);
     ['n_desc','n_val','n_nome','n_mail','n_tel'].forEach(i=>$('#'+i).value='');
   }catch(e){toast(netErr(e))}
   b.disabled=false;b.classList.remove('spin');
 };
-function waLink(c){const t=`Olá${c.nome?', '+c.nome.split(' ')[0]:''}! Segue o link para pagamento de ${c.desc} (${brl(c.val)}): ${c.link}`;const n=c.tel?(c.tel.length<=11?'55'+c.tel:c.tel):'';return `https://wa.me/${n}?text=${encodeURIComponent(t)}`}
+function waLink(c){const t=`Olá${c.nome?', '+c.nome.split(' ')[0]:''}! Segue o link para pagamento de ${c.desc} (${brl(c.val)}): ${c.link}${c.parc>1?`\n\nParcelamento no cartão de crédito em até ${c.parc}x, ${c.juros!==false?'com juros do parcelamento por conta do cliente':'sem juros'}. As parcelas aparecem depois de preencher os dados do cartão e clicar em Continuar.`:''}`;const n=c.tel?(c.tel.length<=11?'55'+c.tel:c.tel):'';return `https://wa.me/${n}?text=${encodeURIComponent(t)}`}
 function showOut(c){
   $('#out').innerHTML=`<div class="res"><b>Link criado: ${brl(c.val)} em até ${c.parc}x</b>
   <div class="l"><input readonly value="${c.link}" onclick="this.select()"><button class="btn sm" data-copy="${c.link}">${ic('copy')}Copiar</button></div>
@@ -331,11 +390,60 @@ function renderList(){
   $('#tb').innerHTML=l.length?l.map((c,i)=>`<tr class="rw" style="animation-delay:${Math.min(i,12)*40}ms"><td><b>${esc(c.desc)}</b><div class="hint">${new Date(c.criado).toLocaleDateString('pt-BR')} · até ${c.parc}x</div></td><td class="hide-m">${esc(c.nome||'—')}</td><td><b>${brl(c.val)}</b>${c.status==='pago'&&c.taxa!=null?`<div class="hint">Taxa ${brl(c.taxa)} · líquido ${brl(c.liquido)}</div>`:''}</td><td>${tag(c.status)}</td>
   <td><div class="acts">${c.status==='pendente'?`<button class="btn ghost sm" data-copy="${c.link}" title="Copiar link">${ic('copy')}</button><a class="btn ghost sm" target="_blank" rel="noopener" href="${waLink(c)}" title="WhatsApp">${ic('send')}</a><button class="btn ghost sm" data-pay="${c.id}" title="Marcar como pago">${ic('check')}</button><button class="btn ghost sm" data-del="${c.id}" title="Cancelar">${ic('x')}</button>`:`<button class="btn ghost sm" data-rm="${c.id}" title="Remover">${ic('trash')}</button>`}</div></td></tr>`).join(''):`<tr><td colspan="5" class="empty">Nenhuma cobrança por aqui. Crie a primeira em “Nova”.</td></tr>`;
   bindCopy();
-  $$('[data-pay]').forEach(b=>b.onclick=()=>{updateDoc(doc(db,'cobrancas',b.dataset.pay),{status:'pago',pagoEm:Date.now()});toast('Marcado como pago')});
+  $$('[data-pay]').forEach(b=>b.onclick=()=>{silenciar.add(b.dataset.pay);updateDoc(doc(db,'cobrancas',b.dataset.pay),{status:'pago',pagoEm:Date.now()});toast('Marcado como pago')});
   $$('[data-del]').forEach(b=>b.onclick=()=>updateDoc(doc(db,'cobrancas',b.dataset.del),{status:'cancelado'}));
   $$('[data-rm]').forEach(b=>b.onclick=()=>{if(confirm('Remover do painel?'))deleteDoc(doc(db,'cobrancas',b.dataset.rm))});
 }
 $('#flt').onchange=renderList;
+
+// Suporte
+const DIA=864e5;
+const p2=n=>String(n).padStart(2,'0');
+const dstr=ms=>{const d=new Date(ms);return `${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}`};
+const fromStr=s=>{const [y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d).getTime()};
+function supInfo(c){
+  const f=new Date(c.supInicio||c.pagoEm||c.criado);f.setHours(0,0,0,0);f.setDate(f.getDate()+c.supDias);
+  const h=new Date();h.setHours(0,0,0,0);
+  const r=Math.round((f-h)/DIA),am=c.supAm??5,vm=c.supVm??2;
+  return{r,fim:f.getTime(),cls:r<0?'s-off':r<=vm?'s-bad':r<=am?'s-wa':'s-ok',
+    txt:r<0?'Suporte encerrado':r===0?'Vence hoje':r===1?'Falta 1 dia':`Faltam ${r} dias`,pct:Math.max(0,Math.min(100,r/c.supDias*100))};
+}
+const waChat=c=>`https://wa.me/${c.tel.length<=11?'55'+c.tel:c.tel}`;
+function renderSup(){
+  const pg=cob.filter(c=>c.status==='pago');
+  const sem=pg.filter(c=>!c.supDias);
+  const com=pg.filter(c=>c.supDias).map(c=>({c,i:supInfo(c)})).sort((a,b)=>a.i.r-b.i.r);
+  const nb=$('#sup_nb');nb.textContent=sem.length;nb.hidden=!sem.length;
+  const wa=c=>c.tel?`<a class="btn wa sm" target="_blank" rel="noopener" href="${waChat(c)}" title="Abrir WhatsApp do cliente">${ic('wa')}</a>`:`<button class="btn ghost sm" disabled title="Sem WhatsApp cadastrado">${ic('wa')}</button>`;
+  let h='';
+  if(sem.length)h+=`<div class="sec-t">Definir suporte (${sem.length})</div>`+sem.map(c=>`<div class="sc rw"><div class="dias s-off"><b>?</b><small>definir</small></div>
+    <div><b>${esc(c.nome||c.desc)}</b><div class="hint">${esc(c.desc)} · pagou ${brl(c.val)} em ${new Date(c.pagoEm||c.criado).toLocaleDateString('pt-BR')}</div></div>
+    <div class="acts">${wa(c)}<button class="btn sm" data-sup="${c.id}">${ic('cal')}Definir dias</button></div></div>`).join('');
+  if(com.length)h+=`<div class="sec-t" style="margin-top:14px">Em acompanhamento (${com.length})</div>`+com.map(({c,i})=>`<div class="sc rw"><div class="dias ${i.cls}"><b>${i.r<0?'—':i.r}</b><small>${i.r<0?'encerrado':i.r===1?'dia':'dias'}</small></div>
+    <div><b>${esc(c.nome||c.desc)}</b><div class="hint">${esc(c.desc)} · ${i.txt} · até ${new Date(i.fim).toLocaleDateString('pt-BR')}</div><div class="pg ${i.cls}"><i style="width:${i.pct}%"></i></div></div>
+    <div class="acts">${wa(c)}<button class="btn ghost sm" data-sup="${c.id}" title="Editar suporte">${ic('sliders')}</button></div></div>`).join('');
+  $('#sup_list').innerHTML=h||'<div class="empty">Quando um cliente pagar, ele aparece aqui para você definir os dias de suporte.</div>';
+  $$('[data-sup]').forEach(b=>b.onclick=()=>openSup(b.dataset.sup));
+}
+const dlg=$('#dlg');let supId=null;
+function openSup(id){
+  const c=cob.find(x=>x.id===id);if(!c)return;supId=id;
+  $('#d_t').textContent=c.nome||c.desc;$('#d_err').textContent='';
+  $('#d_dias').value=c.supDias||'';$('#d_ini').value=dstr(c.supInicio||c.pagoEm||c.criado);
+  $('#d_am').value=c.supAm??5;$('#d_vm').value=c.supVm??2;$('#d_tel').value=c.tel||'';
+  dlg.showModal();
+}
+$('#d_cancel').onclick=()=>dlg.close();
+$('#d_save').onclick=async()=>{
+  const dias=parseInt($('#d_dias').value),am=parseInt($('#d_am').value),vm=parseInt($('#d_vm').value),er=t=>$('#d_err').textContent=t;
+  if(!(dias>0))return er('Informe quantos dias de suporte.');
+  if(isNaN(am)||isNaN(vm))return er('Informe os dias do amarelo e do vermelho.');
+  if(vm>am)return er('O vermelho deve ser menor ou igual ao amarelo.');
+  const ini=$('#d_ini').value?fromStr($('#d_ini').value):Date.now();
+  try{await updateDoc(doc(db,'cobrancas',supId),{supDias:dias,supInicio:ini,supAm:am,supVm:vm,tel:$('#d_tel').value.replace(/\D/g,'')});dlg.close();toast('Suporte salvo')}
+  catch(e){er('Não foi possível salvar. Tente novamente.')}
+};
+setInterval(()=>{if(me)renderSup()},60000);
 
 // Resumo
 function renderDash(){
@@ -348,9 +456,12 @@ function renderDash(){
   $('#bars').innerHTML=ms.map((x,i)=>`<div class="bar"><span>${x.v?brl(x.v).replace(',00',''):''}</span><div style="--h:${x.v/mx*75}%;--d:${i*90}ms"></div>${x.d.toLocaleDateString('pt-BR',{month:'short'}).replace('.','')}</div>`).join('');
   $('#recent').innerHTML=cob.length?`<table><tbody>${cob.slice(0,5).map(c=>`<tr><td><b>${esc(c.desc)}</b></td><td style="text-align:right">${brl(c.val)}</td><td>${tag(c.status)}</td></tr>`).join('')}</tbody></table>`:'<div class="empty">Sem cobranças ainda.</div>';
 }
-$('#sync').onclick=async()=>{
-  const p=cob.filter(c=>c.status==='pendente'||(c.status==='pago'&&c.taxa==null));if(!p.length)return toast('Nada para atualizar');
-  const b=$('#sync');b.disabled=true;b.classList.add('spin');let n=0;
+let sincronizando=false;
+async function syncPag(silent){
+  if(sincronizando)return;
+  const p=cob.filter(c=>c.status==='pendente'||(c.status==='pago'&&c.taxa==null));if(!p.length)return silent||toast('Nada para atualizar');
+  if(silent)p.splice(15);
+  sincronizando=true;const b=$('#sync');if(!silent){b.disabled=true;b.classList.add('spin')}let n=0;
   try{
     for(const c of p){
       const r=await mp(`/v1/payments/search?external_reference=${c.id}&sort=date_created&criteria=desc`);
@@ -363,10 +474,12 @@ $('#sync').onclick=async()=>{
         await updateDoc(doc(db,'cobrancas',c.id),dados);
       }
     }
-    toast(n?n+' pagamento(s) confirmado(s)':'Nenhum pagamento novo');
-  }catch(e){toast(netErr(e))}
-  b.disabled=false;b.classList.remove('spin');
-};
+    if(!silent)toast(n?n+' pagamento(s) confirmado(s)':'Nenhum pagamento novo');
+  }catch(e){if(!silent)toast(netErr(e))}
+  b.disabled=false;b.classList.remove('spin');sincronizando=false;
+}
+$('#sync').onclick=()=>syncPag(false);
+setInterval(()=>{if(me&&!document.hidden)syncPag(true)},45000);
 
 // Acessos (só o dono)
 const okMail=e=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
@@ -383,7 +496,12 @@ function renderAcc(l){
 
 // Entrada
 function start(){
-  unsubs.push(onSnapshot(query(collection(db,'cobrancas'),orderBy('criado','desc')),s=>{cob=s.docs.map(d=>d.data());const v=document.querySelector('.view.on').id;if(v==='dash')renderDash();if(v==='list')renderList()},()=>toast('Sem permissão para ler os dados. Confira as regras do Firestore.')));
+  let visto=null;
+  unsubs.push(onSnapshot(query(collection(db,'cobrancas'),orderBy('criado','desc')),s=>{
+    const novo=s.docs.map(d=>d.data());
+    if(visto)novo.forEach(c=>{if(c.status==='pago'&&visto[c.id]==='pendente')avisoPago(c)});
+    visto=Object.fromEntries(novo.map(c=>[c.id,c.status]));
+    cob=novo;const v=document.querySelector('.view.on').id;if(v==='dash')renderDash();if(v==='list')renderList();renderSup()},()=>toast('Sem permissão para ler os dados. Confira as regras do Firestore.')));
   getDoc(doc(db,'config','main')).then(s=>{cfg=s.exists()?s.data():{};loadCfg()}).catch(()=>{});
   if(isOwner){
     unsubs.push(onSnapshot(collection(db,'acessos'),s=>renderAcc(s.docs.map(d=>d.data()))));
