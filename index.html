@@ -198,7 +198,8 @@ dialog[open]{animation:pop .35s cubic-bezier(.2,.9,.3,1.3)}
   </div>
   <div class="grid g4" style="margin-bottom:14px">
     <div class="card kpi"><span class="chip ok"><svg class="ic"><use href="#i-wallet"/></svg></span><div><small>Líquido recebido</small><b id="k5">R$ 0,00</b></div></div>
-    <div class="card kpi"><span class="chip wa"><svg class="ic"><use href="#i-trend"/></svg></span><div><small>Taxas do Mercado Pago</small><b id="k6">R$ 0,00</b></div></div>
+    <div class="card kpi"><span class="chip wa"><svg class="ic"><use href="#i-trend"/></svg></span><div><small>Taxas do Mercado Pago (você paga)</small><b id="k6">R$ 0,00</b></div></div>
+    <div class="card kpi"><span class="chip"><svg class="ic"><use href="#i-users"/></svg></span><div><small>Taxa paga pelo cliente</small><b id="k7">R$ 0,00</b></div></div>
   </div>
   <div class="grid g2">
     <div class="card"><h2>Recebido nos últimos 6 meses</h2><div class="bars" id="bars"></div></div>
@@ -254,17 +255,12 @@ dialog[open]{animation:pop .35s cubic-bezier(.2,.9,.3,1.3)}
   <div class="card" style="max-width:640px">
     <div class="f" data-owner><label>Access Token do Mercado Pago</label><input id="c_tok" type="password" autocomplete="off" placeholder="APP_USR-..."><p class="hint" id="c_tokh">Mercado Pago → Seu negócio → Configurações → Credenciais.</p></div>
     <div class="f"><label>Nome do seu negócio</label><input id="c_nome" placeholder="Ex.: Excellent Services"></div>
-    <div class="f"><label class="sw"><input type="checkbox" id="c_juros"><i></i><span>Juros do parcelamento pagos pelo cliente</span></label>
-      <p class="hint">Ligado: o cliente paga os juros (valor final maior). Desligado: você assume os juros e o cliente parcela sem acréscimo. Deixe igual ao que está configurado na sua conta do Mercado Pago; esta chave não altera a conta, só ajusta a estimativa de taxa e a mensagem ao cliente.</p></div>
     <div class="f"><label class="sw"><input type="checkbox" id="c_voltawa"><i></i><span>Voltar para o meu WhatsApp após pagar</span></label>
       <p class="hint">Desligado: o cliente só vê a confirmação do Mercado Pago. Ligado: depois de pagar, abre o seu WhatsApp com a mensagem “Pagamento realizado”.</p></div>
     <div class="row">
       <div class="f"><label>Seu WhatsApp</label><input id="c_wa" inputmode="tel" placeholder="(15) 99999-9999"></div>
       <div class="f"><label>Aviso automático (webhook)</label><input id="c_hook" placeholder="Opcional"></div>
     </div>
-    <div class="f"><label>Taxa do Mercado Pago por parcelas (%)</label>
-      <div id="c_taxas" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px"></div>
-      <p class="hint">Usada para estimar a taxa ao criar a cobrança. Confira os percentuais reais da sua conta no Mercado Pago e ajuste aqui.</p></div>
     <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="salvar"><svg class="ic"><use href="#i-check"/></svg>Salvar ajustes</button><button class="btn ghost" id="testar"><svg class="ic"><use href="#i-key"/></svg>Testar conexão</button></div>
   </div>
 </section>
@@ -324,14 +320,28 @@ async function mp(path,method='GET',body){
 const netErr=e=>e instanceof TypeError?'Não foi possível conectar ao servidor. Confira se o /api/mp está publicado na Vercel.':e.message;
 
 // Ajustes
-const TAXAS_PADRAO=[4.98,9.9,11.2,12.4,13.6,14.8,16,17.2,18.4,19.6,20.8,22];
-const taxasAtuais=()=>(cfg.taxas&&cfg.taxas.length===12?cfg.taxas:TAXAS_PADRAO);
-function renderTaxas(){$('#c_taxas').innerHTML=taxasAtuais().map((t,i)=>`<div><small class="hint">${i+1}x</small><input data-tx="${i}" inputmode="decimal" value="${String(t).replace('.',',')}"></div>`).join('')}
+const TAXAS_PADRAO=[4.98,9.9,11.2,12.4,13.6,14.8,16,17.2,18.4,19.6,20.8,22]; // só usada quando a API não informa
+const taxaCache={}; // "valor|parcelas" -> % de juros do cliente informado pelo Mercado Pago (0 = você assume)
+const kTx=(v,p)=>v.toFixed(2)+'|'+p;
+let taxaTimer=null;
+async function buscarTaxa(v,p){
+  try{
+    const r=await mp(`/v1/payment_methods/installments?amount=${v.toFixed(2)}&payment_method_id=visa`);
+    const pc=((r[0]||{}).payer_costs||[]).find(x=>x.installments===p);
+    taxaCache[kTx(v,p)]=pc?(+pc.installment_rate||0):0;
+  }catch(e){taxaCache[kTx(v,p)]=0}
+  estimar();
+}
 let alvo=null; // valor "redondo" original, guardado quando o valor sugerido é aplicado
 function estimar(){
-  const v=num($('#n_val').value),p=+$('#n_parc').value,pct=taxasAtuais()[p-1]||0,e=$('#n_est');
+  const v=num($('#n_val').value),p=+$('#n_parc').value,e=$('#n_est');
   if(v<=0){e.textContent='Informe o valor para ver a taxa estimada.';return}
-  const tx=Math.round(v*pct)/100,cli=p>1&&cfg.jurosCliente!==false;
+  if(p>1&&!(kTx(v,p) in taxaCache)){
+    e.textContent='Consultando as taxas no Mercado Pago...';
+    clearTimeout(taxaTimer);taxaTimer=setTimeout(()=>buscarTaxa(v,p),400);return;
+  }
+  const api=p>1?taxaCache[kTx(v,p)]:0,cli=api>0,pct=cli?api:TAXAS_PADRAO[p-1]||0;
+  const tx=Math.round(v*pct)/100;
   let h=`<b>Taxa estimada: ${brl(tx)}</b> (${String(pct).replace('.',',')}% em ${p}x)<br>Você recebe cerca de <b>${brl(v-tx)}</b>`;
   if(p>1&&!cli)h+=`<br>Você assume os juros: cliente paga ${p}x de ${brl(v/p)}, sem acréscimo.`;
   if(cli){
@@ -345,16 +355,15 @@ function estimar(){
     }
   }
   e.innerHTML=h;
-  const bu=$('#usarSug');if(bu)bu.onclick=()=>{const sug=Math.round(v/(1+pct/100)*100)/100;alvo=v;$('#n_val').value=String(sug.toFixed(2)).replace('.',',');estimar()};
+  const bu=$('#usarSug');if(bu)bu.onclick=()=>{const sug=Math.round(v/(1+pct/100)*100)/100;taxaCache[kTx(sug,p)]=pct;alvo=v;$('#n_val').value=String(sug.toFixed(2)).replace('.',',');estimar()};
   const bv=$('#voltaSug');if(bv)bv.onclick=()=>{const a=alvo;alvo=null;$('#n_val').value=String(a.toFixed(2)).replace('.',',');estimar()};
 }
-function loadCfg(){renderTaxas();estimar();$('#c_juros').checked=cfg.jurosCliente!==false;$('#c_nome').value=cfg.nome||'';$('#c_wa').value=cfg.wa||'';$('#c_voltawa').checked=!!cfg.voltaWa;$('#c_hook').value=cfg.hook||''}
+function loadCfg(){estimar();$('#c_nome').value=cfg.nome||'';$('#c_wa').value=cfg.wa||'';$('#c_voltawa').checked=!!cfg.voltaWa;$('#c_hook').value=cfg.hook||''}
 $('#salvar').onclick=async()=>{
   try{
     const wa=$('#c_wa').value.replace(/\D/g,'');
     if($('#c_voltawa').checked&&wa.length<10)return toast('Informe seu WhatsApp com DDD para ligar essa opção');
-    const taxas=$$('[data-tx]').map(i=>Math.max(0,num(i.value)));
-    cfg={nome:$('#c_nome').value.trim(),wa,voltaWa:$('#c_voltawa').checked,hook:$('#c_hook').value.trim(),taxas,jurosCliente:$('#c_juros').checked};
+    cfg={nome:$('#c_nome').value.trim(),wa,voltaWa:$('#c_voltawa').checked,hook:$('#c_hook').value.trim()};
     await setDoc(doc(db,'config','main'),cfg);estimar();
     const tk=$('#c_tok').value.trim();
     if(isOwner&&tk){await setDoc(doc(db,'segredos','mp'),{token:tk});$('#c_tok').value='';$('#c_tok').placeholder='•••••••• token salvo';$('#c_tokh').textContent='Token salvo. Cole outro para trocar.'}
@@ -371,7 +380,7 @@ $('#n_val').oninput=()=>{alvo=null;estimar()};$('#n_parc').onchange=()=>{alvo=nu
 $('#gerar').onclick=async()=>{
   const desc=$('#n_desc').value.trim(),val=num($('#n_val').value);
   if(!desc||val<=0)return toast('Informe a descrição e um valor maior que zero');
-  const id='c'+Date.now(),parc=+$('#n_parc').value,dias=+$('#n_exp').value;
+  const id='c'+Date.now(),parc=+$('#n_parc').value,dias=+$('#n_exp').value,alvoAtual=alvo;
   const body={items:[{title:desc,quantity:1,unit_price:val,currency_id:'BRL'}],external_reference:id,statement_descriptor:(cfg.nome||'').slice(0,22)||undefined,
     payment_methods:{installments:parc},payer:{name:$('#n_nome').value.trim()||undefined,email:$('#n_mail').value.trim()||undefined}};
   if(cfg.voltaWa&&cfg.wa){
@@ -384,7 +393,7 @@ $('#gerar').onclick=async()=>{
   const b=$('#gerar');b.disabled=true;b.classList.add('spin');
   try{
     const r=await mp('/checkout/preferences','POST',body);
-    const c={id,desc,val,parc,nome:$('#n_nome').value.trim(),mail:$('#n_mail').value.trim(),tel:$('#n_tel').value.replace(/\D/g,''),juros:cfg.jurosCliente!==false,link:r.init_point,status:'pendente',criado:Date.now(),pagoEm:null,por:me.email};
+    const c={id,desc,val,parc,nome:$('#n_nome').value.trim(),mail:$('#n_mail').value.trim(),tel:$('#n_tel').value.replace(/\D/g,''),juros:alvoAtual!==null||(parc>1&&taxaCache[kTx(val,parc)]>0),...(alvoAtual!==null?{alvo:alvoAtual,taxaCli:Math.round((alvoAtual-val)*100)/100}:{}),link:r.init_point,status:'pendente',criado:Date.now(),pagoEm:null,por:me.email};
     await setDoc(doc(db,'cobrancas',id),c);showOut(c);
     ['n_desc','n_val','n_nome','n_mail','n_tel'].forEach(i=>$('#'+i).value='');alvo=null;estimar();
   }catch(e){toast(netErr(e))}
@@ -400,9 +409,13 @@ function bindCopy(){$$('[data-copy]').forEach(b=>b.onclick=()=>navigator.clipboa
 
 // Lista
 const tag=s=>`<span class="tag ${s==='pago'?'t-paid':s==='cancelado'?'t-canc':'t-pend'}">${s==='pago'?'Pago':s==='cancelado'?'Cancelado':'Pendente'}</span>`;
+function infoTaxa(c){
+  if(c.alvo!=null)return `<div class="hint">Cliente paga ~${brl(c.alvo)} · taxa do cliente ${brl(c.taxaCli)}</div>`;
+  return c.status==='pago'&&c.taxa!=null?`<div class="hint">Taxa ${brl(c.taxa)} · líquido ${brl(c.liquido)}</div>`:'';
+}
 function renderList(){
   const f=$('#flt').value,l=cob.filter(c=>!f||c.status===f);
-  $('#tb').innerHTML=l.length?l.map((c,i)=>`<tr class="rw" style="animation-delay:${Math.min(i,12)*40}ms"><td><b>${esc(c.desc)}</b><div class="hint">${new Date(c.criado).toLocaleDateString('pt-BR')} · até ${c.parc}x</div></td><td class="hide-m">${esc(c.nome||'—')}</td><td><b>${brl(c.val)}</b>${c.status==='pago'&&c.taxa!=null?`<div class="hint">Taxa ${brl(c.taxa)} · líquido ${brl(c.liquido)}</div>`:''}</td><td>${tag(c.status)}</td>
+  $('#tb').innerHTML=l.length?l.map((c,i)=>`<tr class="rw" style="animation-delay:${Math.min(i,12)*40}ms"><td><b>${esc(c.desc)}</b><div class="hint">${new Date(c.criado).toLocaleDateString('pt-BR')} · até ${c.parc}x</div></td><td class="hide-m">${esc(c.nome||'—')}</td><td><b>${brl(c.val)}</b>${infoTaxa(c)}</td><td>${tag(c.status)}</td>
   <td><div class="acts">${c.status==='pendente'?`<button class="btn ghost sm" data-copy="${c.link}" title="Copiar link">${ic('copy')}</button><a class="btn ghost sm" target="_blank" rel="noopener" href="${waLink(c)}" title="WhatsApp">${ic('send')}</a><button class="btn ghost sm" data-pay="${c.id}" title="Marcar como pago">${ic('check')}</button><button class="btn ghost sm" data-del="${c.id}" title="Cancelar">${ic('x')}</button>`:`<button class="btn ghost sm" data-rm="${c.id}" title="Remover">${ic('trash')}</button>`}</div></td></tr>`).join(''):`<tr><td colspan="5" class="empty">Nenhuma cobrança por aqui. Crie a primeira em “Nova”.</td></tr>`;
   bindCopy();
   $$('[data-pay]').forEach(b=>b.onclick=()=>{silenciar.add(b.dataset.pay);updateDoc(doc(db,'cobrancas',b.dataset.pay),{status:'pago',pagoEm:Date.now()});toast('Marcado como pago')});
@@ -465,7 +478,9 @@ function renderDash(){
   const pg=cob.filter(c=>c.status==='pago'),m=new Date(),sum=a=>a.reduce((s,c)=>s+c.val,0);
   const mes=pg.filter(c=>{const d=new Date(c.pagoEm||c.criado);return d.getMonth()===m.getMonth()&&d.getFullYear()===m.getFullYear()});
   cnt($('#k1'),sum(pg));cnt($('#k2'),sum(mes));cnt($('#k3'),sum(cob.filter(c=>c.status==='pendente')));cnt($('#k4'),cob.length,n=>Math.round(n));
-  cnt($('#k5'),pg.reduce((s,c)=>s+(c.liquido??c.val),0));cnt($('#k6'),pg.reduce((s,c)=>s+(c.taxa||0),0));
+  cnt($('#k5'),pg.reduce((s,c)=>s+(c.alvo!=null?c.val:(c.liquido??c.val)),0));
+  cnt($('#k6'),pg.filter(c=>c.alvo==null).reduce((s,c)=>s+(c.taxa||0),0));
+  cnt($('#k7'),cob.filter(c=>c.status!=='cancelado'&&c.alvo!=null).reduce((s,c)=>s+(c.taxaCli||0),0));
   const ms=[...Array(6)].map((_,i)=>{const d=new Date(m.getFullYear(),m.getMonth()-5+i,1);return{d,v:sum(pg.filter(c=>{const x=new Date(c.pagoEm||c.criado);return x.getMonth()===d.getMonth()&&x.getFullYear()===d.getFullYear()}))}});
   const mx=Math.max(...ms.map(x=>x.v),1);
   $('#bars').innerHTML=ms.map((x,i)=>`<div class="bar"><span>${x.v?brl(x.v).replace(',00',''):''}</span><div style="--h:${x.v/mx*75}%;--d:${i*90}ms"></div>${x.d.toLocaleDateString('pt-BR',{month:'short'}).replace('.','')}</div>`).join('');
@@ -485,6 +500,8 @@ async function syncPag(silent){
         const taxa=Math.round((ok.fee_details||[]).filter(f=>f.fee_payer==='collector').reduce((s,f)=>s+(f.amount||0),0)*100)/100;
         const liquido=ok.transaction_details?.net_received_amount??Math.round((c.val-taxa)*100)/100;
         const dados={status:'pago',taxa,liquido};
+        const tp=ok.transaction_details?.total_paid_amount,tb=ok.transaction_amount;
+        if(c.alvo!=null&&tp>tb)dados.taxaCli=Math.round((tp-tb)*100)/100;
         if(c.status==='pendente'){dados.pagoEm=new Date(ok.date_approved||Date.now()).getTime();n++}
         await updateDoc(doc(db,'cobrancas',c.id),dados);
       }
