@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Painel de Cobranças</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f5f7fa;--card:#fff;--ink:#0f1b33;--mut:#6b7690;--line:#e4e8f0;--pri:#1d4ed8;--pri2:#e8effe;--ok:#0f9d6b;--ok2:#e3f6ee;--wa:#f59e0b;--wa2:#fef3dc;--bad:#d64545;--bad2:#fde8e8;--r:14px}
+*{box-sizing:border-box;margin:0}
+body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);color:var(--ink);font-size:14px;line-height:1.5}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--pri);outline-offset:2px}
+.app{display:grid;grid-template-columns:240px 1fr;min-height:100vh}
+aside{background:var(--ink);color:#c9d3ea;padding:22px 14px;position:sticky;top:0;height:100vh;display:flex;flex-direction:column;gap:6px}
+.brand{display:flex;gap:10px;align-items:center;padding:4px 10px 22px;color:#fff;font-weight:800;font-size:16px}
+.brand i{width:32px;height:32px;border-radius:9px;background:var(--pri);display:grid;place-items:center;font-style:normal}
+.nav{display:flex;gap:10px;align-items:center;padding:10px 12px;border-radius:10px;background:none;border:0;color:inherit;cursor:pointer;text-align:left;font-weight:500;width:100%}
+.nav:hover{background:#ffffff14}.nav.on{background:#ffffff1f;color:#fff;font-weight:700}
+.nav svg{width:18px;height:18px;flex:none}
+main{padding:30px 34px;max-width:1100px;width:100%}
+h1{font-size:22px;font-weight:800;letter-spacing:-.02em}
+.sub{color:var(--mut);margin:2px 0 22px}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:20px}
+.grid{display:grid;gap:14px}.g4{grid-template-columns:repeat(4,1fr)}.g2{grid-template-columns:1.5fr 1fr}
+.kpi small{color:var(--mut);font-weight:500}.kpi b{display:block;font-size:24px;font-weight:800;letter-spacing:-.02em;margin-top:4px}
+.kpi.main{background:var(--ink);color:#fff;border-color:var(--ink)}.kpi.main small{color:#9fb0d4}
+h2{font-size:15px;font-weight:700;margin-bottom:14px}
+.btn{border:0;border-radius:10px;padding:10px 16px;font-weight:600;cursor:pointer;background:var(--pri);color:#fff;display:inline-flex;gap:8px;align-items:center}
+.btn:hover{filter:brightness(1.1)}.btn.ghost{background:#fff;color:var(--ink);border:1px solid var(--line)}.btn.sm{padding:6px 10px;font-size:12.5px;border-radius:8px}
+label{display:block;font-weight:600;font-size:13px;margin-bottom:5px}
+input,select{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:#fff}
+input:focus,select:focus{border-color:var(--pri);outline:none;box-shadow:0 0 0 3px var(--pri2)}
+.f{margin-bottom:14px}.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.hint{color:var(--mut);font-size:12.5px;margin-top:4px}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;color:var(--mut);font-weight:600;font-size:12.5px;padding:8px 10px;border-bottom:1px solid var(--line)}
+td{padding:12px 10px;border-bottom:1px solid var(--line);vertical-align:middle}tr:last-child td{border:0}
+.tag{padding:3px 10px;border-radius:99px;font-size:12px;font-weight:700;white-space:nowrap}
+.t-paid{background:var(--ok2);color:var(--ok)}.t-pend{background:var(--wa2);color:#b36b00}.t-canc{background:var(--bad2);color:var(--bad)}
+.acts{display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap}
+.empty{text-align:center;color:var(--mut);padding:34px 10px}
+.bars{display:flex;align-items:flex-end;gap:10px;height:150px}
+.bar{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;height:100%;justify-content:flex-end;font-size:11.5px;color:var(--mut)}
+.bar div{width:100%;background:var(--pri);border-radius:6px 6px 2px 2px;min-height:3px}
+.res{background:var(--ok2);border:1px solid #bfe8d6;border-radius:12px;padding:16px;margin-top:16px}
+.res .l{display:flex;gap:8px;margin:10px 0}.res input{background:#fff;font-size:13px}
+pre{background:#0f1b33;color:#d6e1ff;border-radius:10px;padding:14px;font-size:12px;overflow:auto;margin-top:8px}
+.warn{background:var(--wa2);border-radius:10px;padding:12px 14px;font-size:13px;margin-bottom:14px;color:#6b4300}
+.view{display:none}.view.on{display:block}
+#toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:11px 18px;border-radius:10px;opacity:0;pointer-events:none;transition:.25s;z-index:9}
+#toast.on{opacity:1;transform:translateX(-50%)}
+.tabs{display:none}
+@media(max-width:860px){
+.app{grid-template-columns:1fr}
+aside{position:fixed;bottom:0;top:auto;left:0;right:0;height:auto;flex-direction:row;padding:6px;z-index:5;justify-content:space-around;gap:0}
+.brand{display:none}.nav{flex-direction:column;gap:2px;font-size:11px;padding:6px 4px;text-align:center;align-items:center}
+main{padding:20px 16px 90px}.g4{grid-template-columns:1fr 1fr}.g2,.row{grid-template-columns:1fr}
+.hide-m{display:none}}
+</style>
+</head>
+<body>
+<div class="app">
+<aside>
+  <div class="brand"><i>💳</i> Cobranças</div>
+  <button class="nav on" data-v="dash"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>Resumo</button>
+  <button class="nav" data-v="new"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>Nova cobrança</button>
+  <button class="nav" data-v="list"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>Cobranças</button>
+  <button class="nav" data-v="cfg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.5-2-3.5-2.3.9a7 7 0 0 0-2-1.2L14.2 3h-4l-.4 2.5a7 7 0 0 0-2 1.2l-2.3-.9-2 3.5 2 1.5a7 7 0 0 0 0 2.4l-2 1.5 2 3.5 2.3-.9a7 7 0 0 0 2 1.2l.4 2.5h4l.4-2.5a7 7 0 0 0 2-1.2l2.3.9 2-3.5-2-1.5c.1-.4.1-.8.1-1.2z"/></svg>Configurações</button>
+</aside>
+
+<main>
+<!-- RESUMO -->
+<section class="view on" id="dash">
+  <div class="top"><div><h1>Resumo</h1><p class="sub">O que entrou e o que está aguardando pagamento.</p></div>
+  <button class="btn ghost" id="sync">↻ Atualizar pagamentos</button></div>
+  <div class="grid g4" style="margin-bottom:14px">
+    <div class="card kpi main"><small>Recebido no total</small><b id="k1">R$ 0,00</b></div>
+    <div class="card kpi"><small>Recebido este mês</small><b id="k2">R$ 0,00</b></div>
+    <div class="card kpi"><small>Aguardando pagamento</small><b id="k3">R$ 0,00</b></div>
+    <div class="card kpi"><small>Cobranças criadas</small><b id="k4">0</b></div>
+  </div>
+  <div class="grid g2">
+    <div class="card"><h2>Recebido nos últimos 6 meses</h2><div class="bars" id="bars"></div></div>
+    <div class="card"><h2>Últimas cobranças</h2><div id="recent"></div></div>
+  </div>
+</section>
+
+<!-- NOVA -->
+<section class="view" id="new">
+  <h1>Nova cobrança</h1><p class="sub">Defina o valor, gere o link e envie para o cliente pagar.</p>
+  <div class="card" style="max-width:640px">
+    <div class="f"><label>O que está sendo cobrado</label><input id="n_desc" placeholder="Ex.: Manutenção do ar-condicionado"></div>
+    <div class="row">
+      <div class="f"><label>Valor (R$)</label><input id="n_val" inputmode="decimal" placeholder="0,00"></div>
+      <div class="f"><label>Parcelar em até</label><select id="n_parc"></select><p class="hint">Limite de parcelas no cartão.</p></div>
+    </div>
+    <div class="row">
+      <div class="f"><label>Nome do cliente</label><input id="n_nome" placeholder="Opcional"></div>
+      <div class="f"><label>E-mail do cliente</label><input id="n_mail" type="email" placeholder="Opcional"></div>
+    </div>
+    <div class="row">
+      <div class="f"><label>WhatsApp do cliente</label><input id="n_tel" inputmode="tel" placeholder="(15) 99999-9999"></div>
+      <div class="f"><label>Link vale por</label><select id="n_exp"><option value="1">1 dia</option><option value="3">3 dias</option><option value="7" selected>7 dias</option><option value="30">30 dias</option><option value="0">Sem prazo</option></select></div>
+    </div>
+    <button class="btn" id="gerar">Gerar link de pagamento</button>
+    <div id="out"></div>
+  </div>
+</section>
+
+<!-- LISTA -->
+<section class="view" id="list">
+  <div class="top"><div><h1>Cobranças</h1><p class="sub">Todos os links criados e o status de cada um.</p></div>
+  <div style="display:flex;gap:8px"><select id="flt" style="width:auto"><option value="">Todas</option><option value="pago">Pagas</option><option value="pendente">Pendentes</option><option value="cancelado">Canceladas</option></select></div></div>
+  <div class="card" style="overflow:auto"><table><thead><tr><th>Cobrança</th><th class="hide-m">Cliente</th><th>Valor</th><th>Status</th><th></th></tr></thead><tbody id="tb"></tbody></table></div>
+</section>
+
+<!-- CONFIG -->
+<section class="view" id="cfg">
+  <h1>Configurações</h1><p class="sub">Conecte sua conta do Mercado Pago.</p>
+  <div class="card" style="max-width:640px">
+    <div class="f"><label>Access Token do Mercado Pago</label><input id="c_tok" type="password" placeholder="APP_USR-..." autocomplete="off"><p class="hint">Mercado Pago → Seu negócio → Configurações → Credenciais. Use o token de produção para receber de verdade.</p></div>
+    <div class="f"><label>URL do seu servidor (proxy)</label><input id="c_proxy" placeholder="https://seusite.vercel.app/api/mp"><p class="hint">Recomendado. O Mercado Pago bloqueia chamadas direto do navegador (CORS) — veja o código abaixo.</p></div>
+    <div class="f"><label>Nome do seu negócio</label><input id="c_nome" placeholder="Ex.: DK Services"></div>
+    <div class="row">
+      <div class="f"><label>Voltar para (após pagar)</label><input id="c_back" placeholder="https://seusite.com/obrigado"></div>
+      <div class="f"><label>Aviso automático (webhook)</label><input id="c_hook" placeholder="https://seusite.vercel.app/api/webhook"></div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="salvar">Salvar configurações</button><button class="btn ghost" id="testar">Testar conexão</button></div>
+  </div>
+  <div class="card" style="max-width:640px;margin-top:14px">
+    <h2>Servidor intermediário (Vercel)</h2>
+    <div class="warn">Seu token dá acesso à sua conta. Guardado só neste navegador ele fica exposto; o ideal é deixá-lo na variável <b>MP_TOKEN</b> do servidor e não preencher o campo acima.</div>
+    <p class="hint">Crie o arquivo <b>api/mp.js</b> no seu projeto Vercel:</p>
+<pre id="code">export default async function handler(req, res) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  if (req.method === 'OPTIONS') return res.status(200).end();
+  const { path, method = 'GET', body, token } = req.body || {};
+  if (!path || !path.startsWith('/')) return res.status(400).json({ error: 'path inválido' });
+  const r = await fetch('https://api.mercadopago.com' + path, {
+    method,
+    headers: {
+      Authorization: 'Bearer ' + (process.env.MP_TOKEN || token),
+      'Content-Type': 'application/json'
+    },
+    body: body ? JSON.stringify(body) : undefined
+  });
+  res.status(r.status).json(await r.json());
+}</pre>
+    <button class="btn ghost sm" id="cp" style="margin-top:10px">Copiar código</button>
+  </div>
+</section>
+</main>
+</div>
+<div id="toast"></div>
+
+<script>
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const store={get(k,d){try{return JSON.parse(localStorage.getItem(k))??d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+let cfg=store.get('mp_cfg',{}),cob=store.get('mp_cob',[]);
+const brl=n=>(n||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+const save=()=>store.set('mp_cob',cob);
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('on'),2600)}
+function go(v){$$('.view').forEach(e=>e.classList.toggle('on',e.id===v));$$('.nav').forEach(e=>e.classList.toggle('on',e.dataset.v===v));if(v==='dash')renderDash();if(v==='list')renderList();scrollTo(0,0)}
+$$('.nav').forEach(b=>b.onclick=()=>go(b.dataset.v));
+
+// API
+async function mp(path,method='GET',body){
+  if(!cfg.token&&!cfg.proxy)throw new Error('Configure o token do Mercado Pago primeiro.');
+  let r;
+  if(cfg.proxy)r=await fetch(cfg.proxy,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({path,method,body,token:cfg.token||undefined})});
+  else r=await fetch('https://api.mercadopago.com'+path,{method,headers:{Authorization:'Bearer '+cfg.token,'Content-Type':'application/json'},body:body?JSON.stringify(body):undefined});
+  const j=await r.json().catch(()=>({}));
+  if(!r.ok)throw new Error(j.message||j.error||'Erro '+r.status);
+  return j;
+}
+const netErr=e=>e instanceof TypeError?'Não foi possível conectar. Configure a URL do servidor (proxy) em Configurações.':e.message;
+
+// Config
+function loadCfg(){$('#c_tok').value=cfg.token||'';$('#c_proxy').value=cfg.proxy||'';$('#c_nome').value=cfg.nome||'';$('#c_back').value=cfg.back||'';$('#c_hook').value=cfg.hook||''}
+function readCfg(){cfg={token:$('#c_tok').value.trim(),proxy:$('#c_proxy').value.trim(),nome:$('#c_nome').value.trim(),back:$('#c_back').value.trim(),hook:$('#c_hook').value.trim()}}
+$('#salvar').onclick=()=>{readCfg();store.set('mp_cfg',cfg);toast('Configurações salvas')};
+$('#testar').onclick=async()=>{readCfg();try{const u=await mp('/users/me');toast('Conectado: '+(u.nickname||u.email||'conta ok'))}catch(e){toast(netErr(e))}};
+$('#cp').onclick=()=>navigator.clipboard.writeText($('#code').textContent).then(()=>toast('Código copiado'));
+
+// Nova cobrança
+$('#n_parc').innerHTML=[...Array(12)].map((_,i)=>`<option value="${i+1}">${i+1===1?'À vista (1x)':(i+1)+'x'}</option>`).join('');
+$('#n_parc').value=12;
+const num=v=>parseFloat(String(v).replace(/\./g,'').replace(',','.'))||0;
+$('#gerar').onclick=async()=>{
+  const desc=$('#n_desc').value.trim(),val=num($('#n_val').value);
+  if(!desc||val<=0)return toast('Informe a descrição e um valor maior que zero');
+  const id='c'+Date.now(),parc=+$('#n_parc').value,dias=+$('#n_exp').value;
+  const body={items:[{title:desc,quantity:1,unit_price:val,currency_id:'BRL'}],external_reference:id,statement_descriptor:(cfg.nome||'').slice(0,22)||undefined,
+    payment_methods:{installments:parc},payer:{name:$('#n_nome').value.trim()||undefined,email:$('#n_mail').value.trim()||undefined}};
+  if(cfg.back){body.back_urls={success:cfg.back,pending:cfg.back,failure:cfg.back};body.auto_return='approved'}
+  if(cfg.hook)body.notification_url=cfg.hook;
+  if(dias){body.expires=true;body.expiration_date_to=new Date(Date.now()+dias*864e5).toISOString()}
+  const b=$('#gerar');b.disabled=true;b.textContent='Gerando…';
+  try{
+    const r=await mp('/checkout/preferences','POST',body);
+    const c={id,desc,val,parc,nome:$('#n_nome').value.trim(),mail:$('#n_mail').value.trim(),tel:$('#n_tel').value.replace(/\D/g,''),link:r.init_point,status:'pendente',criado:Date.now(),pagoEm:null};
+    cob.unshift(c);save();showOut(c);
+    ['n_desc','n_val','n_nome','n_mail','n_tel'].forEach(i=>$('#'+i).value='');
+  }catch(e){toast(netErr(e))}
+  b.disabled=false;b.textContent='Gerar link de pagamento';
+};
+function waLink(c){const t=`Olá${c.nome?', '+c.nome.split(' ')[0]:''}! Segue o link para pagamento de ${c.desc} (${brl(c.val)}): ${c.link}`;const n=c.tel?(c.tel.length<=11?'55'+c.tel:c.tel):'';return `https://wa.me/${n}?text=${encodeURIComponent(t)}`}
+function showOut(c){
+  $('#out').innerHTML=`<div class="res"><b>Link criado — ${brl(c.val)} em até ${c.parc}x</b>
+  <div class="l"><input readonly value="${c.link}" onclick="this.select()"><button class="btn sm" data-copy="${c.link}">Copiar</button></div>
+  <a class="btn sm" style="text-decoration:none" target="_blank" rel="noopener" href="${waLink(c)}">Enviar no WhatsApp</a></div>`;
+  bindCopy();
+}
+function bindCopy(){$$('[data-copy]').forEach(b=>b.onclick=()=>navigator.clipboard.writeText(b.dataset.copy).then(()=>toast('Link copiado')))}
+
+// Lista
+const tag=s=>`<span class="tag ${s==='pago'?'t-paid':s==='cancelado'?'t-canc':'t-pend'}">${s==='pago'?'Pago':s==='cancelado'?'Cancelado':'Pendente'}</span>`;
+const esc=s=>String(s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
+function renderList(){
+  const f=$('#flt').value,l=cob.filter(c=>!f||c.status===f);
+  $('#tb').innerHTML=l.length?l.map(c=>`<tr><td><b>${esc(c.desc)}</b><div class="hint">${new Date(c.criado).toLocaleDateString('pt-BR')} · até ${c.parc}x</div></td><td class="hide-m">${esc(c.nome||'—')}</td><td><b>${brl(c.val)}</b></td><td>${tag(c.status)}</td>
+  <td><div class="acts">${c.status==='pendente'?`<button class="btn ghost sm" data-copy="${c.link}">Copiar link</button><a class="btn ghost sm" style="text-decoration:none" target="_blank" rel="noopener" href="${waLink(c)}">WhatsApp</a><button class="btn ghost sm" data-pay="${c.id}">Marcar pago</button><button class="btn ghost sm" data-del="${c.id}">Cancelar</button>`:`<button class="btn ghost sm" data-rm="${c.id}">Remover</button>`}</div></td></tr>`).join(''):`<tr><td colspan="5" class="empty">Nenhuma cobrança por aqui. Crie a primeira em “Nova cobrança”.</td></tr>`;
+  bindCopy();
+  $$('[data-pay]').forEach(b=>b.onclick=()=>{const c=cob.find(x=>x.id===b.dataset.pay);c.status='pago';c.pagoEm=Date.now();save();renderList();toast('Marcado como pago')});
+  $$('[data-del]').forEach(b=>b.onclick=()=>{cob.find(x=>x.id===b.dataset.del).status='cancelado';save();renderList()});
+  $$('[data-rm]').forEach(b=>b.onclick=()=>{if(confirm('Remover do painel?')){cob=cob.filter(x=>x.id!==b.dataset.rm);save();renderList()}});
+}
+$('#flt').onchange=renderList;
+
+// Resumo
+function renderDash(){
+  const pg=cob.filter(c=>c.status==='pago'),m=new Date();
+  const mes=pg.filter(c=>{const d=new Date(c.pagoEm||c.criado);return d.getMonth()===m.getMonth()&&d.getFullYear()===m.getFullYear()});
+  const sum=a=>a.reduce((s,c)=>s+c.val,0);
+  $('#k1').textContent=brl(sum(pg));$('#k2').textContent=brl(sum(mes));
+  $('#k3').textContent=brl(sum(cob.filter(c=>c.status==='pendente')));$('#k4').textContent=cob.length;
+  const ms=[...Array(6)].map((_,i)=>{const d=new Date(m.getFullYear(),m.getMonth()-5+i,1);return{d,v:sum(pg.filter(c=>{const x=new Date(c.pagoEm||c.criado);return x.getMonth()===d.getMonth()&&x.getFullYear()===d.getFullYear()}))}});
+  const mx=Math.max(...ms.map(x=>x.v),1);
+  $('#bars').innerHTML=ms.map(x=>`<div class="bar"><span>${x.v?brl(x.v).replace(',00',''):''}</span><div style="height:${x.v/mx*100*.75}%"></div>${x.d.toLocaleDateString('pt-BR',{month:'short'}).replace('.','')}</div>`).join('');
+  $('#recent').innerHTML=cob.length?`<table><tbody>${cob.slice(0,5).map(c=>`<tr><td><b>${esc(c.desc)}</b></td><td style="text-align:right">${brl(c.val)}</td><td>${tag(c.status)}</td></tr>`).join('')}</tbody></table>`:'<div class="empty">Sem cobranças ainda.</div>';
+}
+
+// Sincronizar com Mercado Pago
+$('#sync').onclick=async()=>{
+  const p=cob.filter(c=>c.status==='pendente');if(!p.length)return toast('Nenhuma cobrança pendente');
+  const b=$('#sync');b.disabled=true;b.textContent='Atualizando…';let n=0;
+  try{
+    for(const c of p){
+      const r=await mp(`/v1/payments/search?external_reference=${c.id}&sort=date_created&criteria=desc`);
+      const ok=(r.results||[]).find(x=>x.status==='approved');
+      if(ok){c.status='pago';c.pagoEm=new Date(ok.date_approved||Date.now()).getTime();n++}
+    }
+    save();renderDash();toast(n?n+' pagamento(s) confirmado(s)':'Nenhum pagamento novo');
+  }catch(e){toast(netErr(e))}
+  b.disabled=false;b.textContent='↻ Atualizar pagamentos';
+};
+
+loadCfg();renderDash();
+</script>
+</body>
+</html>
