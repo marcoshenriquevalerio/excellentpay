@@ -1,0 +1,25 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function dono() {
+      return request.auth != null
+        && request.auth.token.email_verified == true
+        && request.auth.token.email == 'excellentservices.excel@gmail.com';
+    }
+    function liberado() {
+      return dono() || (request.auth != null
+        && request.auth.token.email_verified == true
+        && exists(/databases/$(database)/documents/acessos/$(request.auth.token.email)));
+    }
+    match /acessos/{email} {
+      allow read: if liberado() || (request.auth != null && request.auth.token.email == email);
+      allow write: if dono();
+    }
+    match /segredos/{id} {
+      allow read: if liberado();
+      allow write: if dono();
+    }
+    match /cobrancas/{id} { allow read, write: if liberado(); }
+    match /config/{id}    { allow read, write: if liberado(); }
+  }
+}
