@@ -327,11 +327,26 @@ const netErr=e=>e instanceof TypeError?'Não foi possível conectar ao servidor.
 const TAXAS_PADRAO=[4.98,9.9,11.2,12.4,13.6,14.8,16,17.2,18.4,19.6,20.8,22];
 const taxasAtuais=()=>(cfg.taxas&&cfg.taxas.length===12?cfg.taxas:TAXAS_PADRAO);
 function renderTaxas(){$('#c_taxas').innerHTML=taxasAtuais().map((t,i)=>`<div><small class="hint">${i+1}x</small><input data-tx="${i}" inputmode="decimal" value="${String(t).replace('.',',')}"></div>`).join('')}
+let alvo=null; // valor "redondo" original, guardado quando o valor sugerido é aplicado
 function estimar(){
   const v=num($('#n_val').value),p=+$('#n_parc').value,pct=taxasAtuais()[p-1]||0,e=$('#n_est');
   if(v<=0){e.textContent='Informe o valor para ver a taxa estimada.';return}
-  const tx=Math.round(v*pct)/100;
-  e.innerHTML=`<b>Taxa estimada: ${brl(tx)}</b> (${String(pct).replace('.',',')}% em ${p}x)<br>Você recebe cerca de <b>${brl(v-tx)}</b>${p>1?(cfg.jurosCliente!==false?'<br>Juros pagos pelo cliente: o valor final dele será maior que o da cobrança.':`<br>Você assume os juros: cliente paga ${p}x de ${brl(v/p)}, sem acréscimo.`):''}`;
+  const tx=Math.round(v*pct)/100,cli=p>1&&cfg.jurosCliente!==false;
+  let h=`<b>Taxa estimada: ${brl(tx)}</b> (${String(pct).replace('.',',')}% em ${p}x)<br>Você recebe cerca de <b>${brl(v-tx)}</b>`;
+  if(p>1&&!cli)h+=`<br>Você assume os juros: cliente paga ${p}x de ${brl(v/p)}, sem acréscimo.`;
+  if(cli){
+    const tot=Math.round((v+tx)*100)/100;
+    h+=`<br>Cliente pagará cerca de <b>${brl(tot)}</b> (${p}x de ${brl(tot/p)})`;
+    if(alvo===null){
+      const sug=Math.round(v/(1+pct/100)*100)/100;
+      h+=`<div style="margin-top:8px;padding-top:8px;border-top:1px dashed #b8c6ff">Para o cliente pagar <b>${brl(v)}</b> já com a taxa, cobre <b>${brl(sug)}</b> <button type="button" class="btn sm" id="usarSug" style="margin-left:6px">${ic('check')}Usar este valor</button></div>`;
+    }else{
+      h+=`<div style="margin-top:8px;padding-top:8px;border-top:1px dashed #b8c6ff">Valor ajustado para o cliente pagar ~${brl(alvo)} com a taxa. <button type="button" class="btn ghost sm" id="voltaSug" style="margin-left:6px">Voltar para ${brl(alvo)}</button></div>`;
+    }
+  }
+  e.innerHTML=h;
+  const bu=$('#usarSug');if(bu)bu.onclick=()=>{const sug=Math.round(v/(1+pct/100)*100)/100;alvo=v;$('#n_val').value=String(sug.toFixed(2)).replace('.',',');estimar()};
+  const bv=$('#voltaSug');if(bv)bv.onclick=()=>{const a=alvo;alvo=null;$('#n_val').value=String(a.toFixed(2)).replace('.',',');estimar()};
 }
 function loadCfg(){renderTaxas();estimar();$('#c_juros').checked=cfg.jurosCliente!==false;$('#c_nome').value=cfg.nome||'';$('#c_wa').value=cfg.wa||'';$('#c_voltawa').checked=!!cfg.voltaWa;$('#c_hook').value=cfg.hook||''}
 $('#salvar').onclick=async()=>{
@@ -352,7 +367,7 @@ $('#sair').onclick=()=>signOut(auth);
 // Nova cobrança
 $('#n_parc').innerHTML=[...Array(12)].map((_,i)=>`<option value="${i+1}">${i?(i+1)+'x':'À vista (1x)'}</option>`).join('');$('#n_parc').value=12;
 const num=v=>parseFloat(String(v).replace(/\./g,'').replace(',','.'))||0;
-$('#n_val').oninput=estimar;$('#n_parc').onchange=estimar;
+$('#n_val').oninput=()=>{alvo=null;estimar()};$('#n_parc').onchange=()=>{alvo=null;estimar()};
 $('#gerar').onclick=async()=>{
   const desc=$('#n_desc').value.trim(),val=num($('#n_val').value);
   if(!desc||val<=0)return toast('Informe a descrição e um valor maior que zero');
@@ -371,7 +386,7 @@ $('#gerar').onclick=async()=>{
     const r=await mp('/checkout/preferences','POST',body);
     const c={id,desc,val,parc,nome:$('#n_nome').value.trim(),mail:$('#n_mail').value.trim(),tel:$('#n_tel').value.replace(/\D/g,''),juros:cfg.jurosCliente!==false,link:r.init_point,status:'pendente',criado:Date.now(),pagoEm:null,por:me.email};
     await setDoc(doc(db,'cobrancas',id),c);showOut(c);
-    ['n_desc','n_val','n_nome','n_mail','n_tel'].forEach(i=>$('#'+i).value='');
+    ['n_desc','n_val','n_nome','n_mail','n_tel'].forEach(i=>$('#'+i).value='');alvo=null;estimar();
   }catch(e){toast(netErr(e))}
   b.disabled=false;b.classList.remove('spin');
 };
